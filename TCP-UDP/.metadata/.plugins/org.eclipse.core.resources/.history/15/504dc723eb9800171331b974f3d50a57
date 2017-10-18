@@ -1,0 +1,74 @@
+import java.io.*;
+import java.net.*;
+
+public class ServidorUDP
+{
+	public static void main(String args[]) throws Exception {
+        byte[] dadosRecebidos1 = new byte[1];
+        byte[] dadosRecebidos2 = new byte[1];
+        byte[] dadosEnviados1 = new byte[1];
+        byte[] dadosEnviados2 = new byte[1];
+        int vencedor = 0;
+        
+        DatagramSocket socketServidor = null;
+        
+        try{
+	        //Inicializa o socket com a porta 9876
+			socketServidor = new DatagramSocket(9876);
+	
+			while(true) {
+	        	//Socket recebe um pacote
+	        	DatagramPacket pacoteRecebido1 = 
+					new DatagramPacket(dadosRecebidos1, dadosRecebidos1.length);
+	        	System.out.println("Esperando primeiro cliente: ");
+	        	socketServidor.receive(pacoteRecebido1);
+
+	        	DatagramPacket pacoteRecebido2 =
+	        			new DatagramPacket(dadosRecebidos2, dadosRecebidos2.length);
+	        	System.out.println("Esperando segundo cliente: ");
+	        	//O conteúdo é mostrado
+	            String conteudoRecebido1 = new String(pacoteRecebido1.getData());
+	            
+	            int conteudo1 = Integer.parseInt(conteudoRecebido1);
+	            System.out.println("Recebido: " + conteudoRecebido1);
+	            
+	            String conteudoRecebido2 = new String(pacoteRecebido2.getData());
+	            int conteudo2 = Integer.parseInt(conteudoRecebido2);
+	            
+	            System.out.println("Recebido: " + conteudo2);
+	            
+	            //Endereço e porta de origem são recuperados
+	            InetAddress IPAddress1 = pacoteRecebido1.getAddress();
+	            InetAddress IPAddress2 = pacoteRecebido2.getAddress();
+	     
+	            int port1 = pacoteRecebido1.getPort();
+	            int port2 = pacoteRecebido2.getPort();
+	            
+	            
+	            //Confere se eh impar ou par
+	            if((conteudo1 + conteudo2)%2==0){
+	            	vencedor = port1;
+	            } else {
+	            	vencedor = port2;
+	            }
+	            
+	            //Um pacote é preparado e enviado
+	            DatagramPacket pacoteEnviado1 = 
+					new DatagramPacket(dadosEnviados1, dadosEnviados1.length, 
+					IPAddress1, port1);
+	            socketServidor.send(pacoteEnviado1);
+	            DatagramPacket pacoteEnviado2 =
+	            		new DatagramPacket(dadosEnviados2, dadosEnviados2.length,
+	            	IPAddress2, port2);
+	            socketServidor.send(pacoteEnviado2);
+	        }
+        } catch (SocketException e){
+        	System.out.println("Socket: " + e.getMessage());
+		} catch (IOException e) {
+			System.out.println("IO: " + e.getMessage());
+		} finally {
+			if(socketServidor != null) 
+				socketServidor.close();
+		}
+	}
+}

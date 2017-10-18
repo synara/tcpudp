@@ -1,0 +1,119 @@
+import java.net.*;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.concurrent.TimeUnit;
+import java.util.Date;
+import java.io.*;
+
+public class ServidorTCP {
+	public static void main(String args[]) {
+
+		try {
+			// Cria o socket do servidor
+			ServerSocket socketServidor = new ServerSocket(7896);
+			while (true) {
+				System.out.println("Aguardando cliente...");
+				// Recebe solicitação de socket do cliente
+				Socket socketCliente = socketServidor.accept();
+				// Estabelece conexão instanciando a thread
+				Connection c = new Connection(socketCliente);
+			}
+		} catch (IOException e) {
+			System.out.println("Listen :" + e.getMessage());
+		}
+	}
+}
+
+class Connection extends Thread {
+	DataInputStream entrada;
+	DataOutputStream saida;
+	Socket socketCliente;
+	ArrayList<DadosCliente> dadosCliente;
+
+	public Connection(Socket aSocketCliente) {
+		try {
+			socketCliente = aSocketCliente;
+			// Vincula streams de entrada e saída ao socket
+			entrada = new DataInputStream(socketCliente.getInputStream());
+			saida = new DataOutputStream(socketCliente.getOutputStream());
+			// Inicia thread
+			this.start();
+		} catch (IOException e) {
+			System.out.println("Connection:" + e.getMessage());
+		}
+	}
+
+	public void run() {
+		try {
+			int requisicao = entrada.readInt();
+			int idEstacao = entrada.readInt();
+			int idPessoa = entrada.readInt();
+			GregorianCalendar hora = new GregorianCalendar();
+			
+			
+			if(requisicao == 1) {
+				DadosCliente dados = new DadosCliente(idPessoa, idEstacao, requisicao, hora);			
+				armazenar(dados);
+				
+				saida.writeUTF("Solicitação recebida.");
+			}
+			else {
+				DadosCliente dados = new DadosCliente(idPessoa, idEstacao, requisicao, hora);			
+				armazenar(dados);
+				saida.writeUTF("Devolução cadastrada.");
+			}
+			
+			saida.writeUTF("Servidor: \n");
+			System.out.println("Recebeu: \nNúmero requisição: " + requisicao + "\nId Estação: " + idEstacao + "\nId Pessoa: " + idPessoa);
+			System.out.println("Saida " + saida.size());
+		} catch (EOFException e) {
+			System.out.println("EOF:" + e.getMessage());
+		} catch (IOException e) {
+			System.out.println("IO:" + e.getMessage());
+		} finally {
+			try {
+				socketCliente.close();
+			} catch (IOException e) {
+				/* erro ao fechar */
+			}
+		}
+	}
+	
+	public void armazenar(DadosCliente d) {
+		dadosCliente = new ArrayList<DadosCliente>();
+		int ultimo; 
+		DadosCliente cliente;
+		
+		if(d.getRequisicao() != 1 && d != null) {
+			ultimo = dadosCliente.indexOf(dadosCliente.size() - 1);			
+			cliente = dadosCliente.get(ultimo);	
+			
+			 Time minutos = cliente.getHora().getTime().getHours();
+		}
+		
+		dadosCliente.add(d);
+	}
+	
+	public Date converterHora(long ms) {
+		String hora = String.format("%03d:%02d", TimeUnit.MILLISECONDS.toHours(ms),
+				TimeUnit.MILLISECONDS.toMinutes(ms) % 60);
+		Date horaConvertida = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+
+		try {
+			sdf.parse(hora);
+		} catch (Exception e) {
+			String mensagem = e.getMessage();
+		}
+		
+		System.out.println(horaConvertida);
+		return horaConvertida;
+	}
+	
+}
+
+
+
